@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from './database/database.module';
+import { APP_PIPE } from '@nestjs/core';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { appConfig, databaseConfig, validateEnv } from './config';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -11,7 +13,13 @@ import { appConfig, databaseConfig, validateEnv } from './config';
       load: [appConfig, databaseConfig],
       validate: validateEnv,
     }),
-    DatabaseModule,
+    UsersModule,
+  ],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
   ],
 })
 export class AppModule {}
