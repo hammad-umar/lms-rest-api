@@ -4,12 +4,18 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateUserDto } from './dto/create-user.dto';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as usersSchema from '../../database/schemas/user.schema';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ERROR_MESSAGES } from '../../common/constants';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import {
+  METADATA_CONSTRUCTOR,
+  PAGINATION_CONSTRUCTOR,
+} from '../../common/utils/pagination';
 
 @Injectable()
 export class UsersService {
@@ -27,7 +33,9 @@ export class UsersService {
       .where(eq(usersSchema.users.email, email));
 
     if (alreadyExists) {
-      throw new UnprocessableEntityException('Email already exists.');
+      throw new UnprocessableEntityException(
+        ERROR_MESSAGES.ALREADY_EXISTS('Email'),
+      );
     }
 
     const [user] = await this.db
@@ -38,8 +46,21 @@ export class UsersService {
     return user;
   }
 
-  async find() {
-    return this.db.query.users.findMany();
+  async find(paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+
+    const baseQuery = this.db.select().from(usersSchema.users).$dynamic();
+    const paginatedQuery = PAGINATION_CONSTRUCTOR(baseQuery, page, limit);
+
+    const [items, totalResult] = await Promise.all([
+      paginatedQuery,
+      this.db.select({ value: count() }).from(usersSchema.users),
+    ]);
+
+    const totalItems = totalResult[0]?.value ?? 0;
+    const meta = METADATA_CONSTRUCTOR(page, limit, totalItems, items.length);
+
+    return { items, meta };
   }
 
   async findOne(id: number) {
@@ -49,7 +70,7 @@ export class UsersService {
       .where(eq(usersSchema.users.id, id));
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('User'));
     }
 
     return user;
@@ -63,7 +84,7 @@ export class UsersService {
       .returning();
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('User'));
     }
 
     return user;
@@ -76,7 +97,7 @@ export class UsersService {
       .returning();
 
     if (!user) {
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('User'));
     }
 
     return user;

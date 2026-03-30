@@ -7,11 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -20,8 +22,8 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: 'Find all users' })
-  async find() {
-    return this.usersService.find();
+  async find(@Query() paginationDto: PaginationDto) {
+    return this.usersService.find(paginationDto);
   }
 
   @Get(':id')

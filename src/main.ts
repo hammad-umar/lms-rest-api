@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
-import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ConfigType } from './config';
 
@@ -19,7 +19,8 @@ async function bootstrap(): Promise<void> {
     .build();
 
   const rawDocument = SwaggerModule.createDocument(app, config);
-  const document = cleanupOpenApiDoc(rawDocument) as OpenAPIObject;
+  const document = cleanupOpenApiDoc(rawDocument);
+
   SwaggerModule.setup('docs', app, document);
 
   const port = configService.get('app.port', { infer: true })!;
