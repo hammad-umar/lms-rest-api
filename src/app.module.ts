@@ -6,6 +6,7 @@ import { appConfig, databaseConfig, validateEnv } from './config';
 import { UsersModule } from './modules/users/users.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ZodValidationExceptionFilter } from './common/filters/zod-validation-exception.filter';
+import { ProfilesModule } from './modules/profiles/profiles.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ZodValidationExceptionFilter } from './common/filters/zod-validation-ex
       validate: validateEnv,
     }),
     UsersModule,
+    ProfilesModule,
   ],
   providers: [
     {
