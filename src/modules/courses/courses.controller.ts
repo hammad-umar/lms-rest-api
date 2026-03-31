@@ -7,11 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Course')
 @Controller('courses')
@@ -20,8 +22,8 @@ export class CoursesController {
 
   @Get()
   @ApiOperation({ summary: 'Find all courses list' })
-  async find() {
-    return this.coursesService.find();
+  async find(@Query() paginationDto: PaginationDto) {
+    return this.coursesService.find(paginationDto);
   }
 
   @Get(':courseId')

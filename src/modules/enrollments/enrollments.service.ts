@@ -5,12 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseError } from 'pg';
-import { and, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { dbSchemas } from '../../database/schemas';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { CreateEnrollment } from './enrollments.schema';
 import { ERROR_MESSAGES } from '../../common/constants';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import {
+  METADATA_CONSTRUCTOR,
+  PAGINATION_CONSTRUCTOR,
+} from '../../common/utils/pagination';
 
 @Injectable()
 export class EnrollmentsService {
@@ -65,8 +70,10 @@ export class EnrollmentsService {
     return { message: 'Unenrolled successfully.' };
   }
 
-  async findUserCourses(userId: number) {
-    const courses = await this.db
+  async findUserCourses(userId: number, paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+
+    const baseQuery = this.db
       .select({
         id: dbSchemas.courses.id,
         title: dbSchemas.courses.title,
@@ -79,13 +86,33 @@ export class EnrollmentsService {
         dbSchemas.courses,
         eq(dbSchemas.enrollments.courseId, dbSchemas.courses.id),
       )
-      .where(eq(dbSchemas.enrollments.userId, userId));
+      .where(eq(dbSchemas.enrollments.userId, userId))
+      .$dynamic();
 
-    return courses;
+    const paginatedQuery = PAGINATION_CONSTRUCTOR(baseQuery, page, limit);
+
+    const [items, totalResult] = await Promise.all([
+      paginatedQuery,
+      this.db
+        .select({ value: count() })
+        .from(dbSchemas.enrollments)
+        .innerJoin(
+          dbSchemas.courses,
+          eq(dbSchemas.enrollments.courseId, dbSchemas.courses.id),
+        )
+        .where(eq(dbSchemas.enrollments.userId, userId)),
+    ]);
+
+    const totalItems = totalResult[0]?.value ?? 0;
+    const meta = METADATA_CONSTRUCTOR(page, limit, totalItems, items.length);
+
+    return { items, meta };
   }
 
-  async findCourseStudents(courseId: number) {
-    const students = await this.db
+  async findCourseStudents(courseId: number, paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+
+    const baseQuery = this.db
       .select({
         id: dbSchemas.users.id,
         name: dbSchemas.users.name,
@@ -98,8 +125,26 @@ export class EnrollmentsService {
         dbSchemas.users,
         eq(dbSchemas.enrollments.userId, dbSchemas.users.id),
       )
-      .where(eq(dbSchemas.enrollments.courseId, courseId));
+      .where(eq(dbSchemas.enrollments.courseId, courseId))
+      .$dynamic();
 
-    return students;
+    const paginatedQuery = PAGINATION_CONSTRUCTOR(baseQuery, page, limit);
+
+    const [items, totalResult] = await Promise.all([
+      paginatedQuery,
+      this.db
+        .select({ value: count() })
+        .from(dbSchemas.enrollments)
+        .innerJoin(
+          dbSchemas.users,
+          eq(dbSchemas.enrollments.userId, dbSchemas.users.id),
+        )
+        .where(eq(dbSchemas.enrollments.courseId, courseId)),
+    ]);
+
+    const totalItems = totalResult[0]?.value ?? 0;
+    const meta = METADATA_CONSTRUCTOR(page, limit, totalItems, items.length);
+
+    return { items, meta };
   }
 }

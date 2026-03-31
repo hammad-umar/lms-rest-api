@@ -7,11 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { LessonsService } from './lessons.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Lesson')
 @Controller('lessons')
@@ -20,8 +22,11 @@ export class LessonsController {
 
   @Get('/courses/:courseId')
   @ApiOperation({ summary: 'Get list of all lessons for a course' })
-  async find(@Param('courseId', ParseIntPipe) courseId: number) {
-    return this.lessonsService.find(courseId);
+  async find(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.lessonsService.find(courseId, paginationDto);
   }
 
   @Get(':lessonId')

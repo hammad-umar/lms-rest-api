@@ -3,9 +3,14 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { dbSchemas } from '../../database/schemas';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { ERROR_MESSAGES } from '../../common/constants';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import {
+  METADATA_CONSTRUCTOR,
+  PAGINATION_CONSTRUCTOR,
+} from '../../common/utils/pagination';
 
 @Injectable()
 export class CoursesService {
@@ -34,8 +39,21 @@ export class CoursesService {
     return course;
   }
 
-  async find() {
-    return this.db.query.courses.findMany();
+  async find(paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+
+    const baseQuery = this.db.select().from(dbSchemas.courses).$dynamic();
+    const paginatedQuery = PAGINATION_CONSTRUCTOR(baseQuery, page, limit);
+
+    const [items, totalResult] = await Promise.all([
+      paginatedQuery,
+      this.db.select({ value: count() }).from(dbSchemas.courses),
+    ]);
+
+    const totalItems = totalResult[0]?.value ?? 0;
+    const meta = METADATA_CONSTRUCTOR(page, limit, totalItems, items.length);
+
+    return { items, meta };
   }
 
   async findOne(courseId: number) {

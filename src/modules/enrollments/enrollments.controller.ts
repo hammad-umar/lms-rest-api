@@ -6,10 +6,12 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Enrollment')
 @Controller('enrollments')
@@ -33,13 +35,19 @@ export class EnrollmentsController {
 
   @Get('/user-courses/:userId')
   @ApiOperation({ summary: 'Find courses of a user by userId.' })
-  async findUserCourses(@Param('userId', ParseIntPipe) userId: number) {
-    return this.enrollmentsService.findUserCourses(userId);
+  async findUserCourses(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.enrollmentsService.findUserCourses(userId, paginationDto);
   }
 
   @Get('/course-students/:courseId')
   @ApiOperation({ summary: 'Find students of a course by courseId.' })
-  async findCourseStudents(@Param('courseId', ParseIntPipe) courseId: number) {
-    return this.enrollmentsService.findCourseStudents(courseId);
+  async findCourseStudents(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.enrollmentsService.findCourseStudents(courseId, paginationDto);
   }
 }
