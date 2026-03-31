@@ -3,7 +3,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { dbSchemas } from '../../database/schemas';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, sql, ilike } from 'drizzle-orm';
 import { ERROR_MESSAGES } from '../../common/constants';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -11,6 +11,7 @@ import {
   METADATA_CONSTRUCTOR,
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
+import { SearchDto } from '../../common/dto/search.dto';
 
 @Injectable()
 export class CoursesService {
@@ -39,15 +40,29 @@ export class CoursesService {
     return course;
   }
 
-  async find(paginationDto: PaginationDto) {
+  async find(paginationDto: PaginationDto, searchDto: SearchDto) {
     const { page, limit } = paginationDto;
+    const { searchTerm } = searchDto;
 
-    const baseQuery = this.db.select().from(dbSchemas.courses).$dynamic();
+    const term = searchTerm ?? '';
+    const whereClause = term
+      ? ilike(sql`${dbSchemas.courses.title}`, `%${term}%`)
+      : undefined;
+
+    const baseQuery = this.db
+      .select()
+      .from(dbSchemas.courses)
+      .where(whereClause)
+      .$dynamic();
+
     const paginatedQuery = PAGINATION_CONSTRUCTOR(baseQuery, page, limit);
 
     const [items, totalResult] = await Promise.all([
       paginatedQuery,
-      this.db.select({ value: count() }).from(dbSchemas.courses),
+      this.db
+        .select({ value: count() })
+        .from(dbSchemas.courses)
+        .where(whereClause),
     ]);
 
     const totalItems = totalResult[0]?.value ?? 0;

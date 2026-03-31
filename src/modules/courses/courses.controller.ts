@@ -14,6 +14,7 @@ import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { SearchDto } from '../../common/dto/search.dto';
 
 @ApiTags('Course')
 @Controller('courses')
@@ -22,8 +23,11 @@ export class CoursesController {
 
   @Get()
   @ApiOperation({ summary: 'Find all courses list' })
-  async find(@Query() paginationDto: PaginationDto) {
-    return this.coursesService.find(paginationDto);
+  async find(
+    @Query() paginationDto: PaginationDto,
+    @Query() searchDto: SearchDto,
+  ) {
+    return this.coursesService.find(paginationDto, searchDto);
   }
 
   @Get(':courseId')
