@@ -29,6 +29,20 @@
       "when": 1774947423929,
       "tag": "0003_open_human_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774975543655,
+      "tag": "0004_broad_manta",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774975565858,
+      "tag": "0005_outstanding_blue_blade",
+      "breakpoints": true
     }
   ]
 }

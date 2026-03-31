@@ -2,6 +2,7 @@ import { pgTable, integer, timestamp, text, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import * as usersSchema from './user.schema';
 import * as lessonsSchema from './lesson.schema';
+import * as enrollmentsSchema from './enrollment.schema';
 
 export const courses = pgTable(
   'courses',
@@ -29,4 +30,5 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
     references: [usersSchema.users.id],
   }),
   lessons: many(lessonsSchema.lessons),
+  enrollments: many(enrollmentsSchema.enrollments),
 }));
