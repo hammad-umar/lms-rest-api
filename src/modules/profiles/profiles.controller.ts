@@ -6,7 +6,7 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { ProfilesService } from './profiles.service';
 
@@ -16,6 +16,7 @@ export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
   @Post(':userId')
+  @ApiOperation({ summary: 'Create user profile' })
   async create(
     @Body() createProfileDto: CreateProfileDto,
     @Param('userId', ParseIntPipe) userId: number,
@@ -24,6 +25,7 @@ export class ProfilesController {
   }
 
   @Get(':userId')
+  @ApiOperation({ summary: 'Find user profile by user ID' })
   async findOne(@Param('userId', ParseIntPipe) userId: number) {
     return this.profilesService.findOne(userId);
   }

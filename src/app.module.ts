@@ -7,6 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ZodValidationExceptionFilter } from './common/filters/zod-validation-exception.filter';
 import { ProfilesModule } from './modules/profiles/profiles.module';
+import { CoursesModule } from './modules/courses/courses.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
     }),
     UsersModule,
     ProfilesModule,
+    CoursesModule,
   ],
   providers: [
     {
