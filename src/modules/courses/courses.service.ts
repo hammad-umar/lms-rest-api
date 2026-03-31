@@ -75,6 +75,7 @@ export class CoursesService {
     const updatedCourse = await this.db
       .update(dbSchemas.courses)
       .set(updateCourseDto)
+      .where(eq(dbSchemas.courses.id, courseId))
       .returning();
 
     return updatedCourse;

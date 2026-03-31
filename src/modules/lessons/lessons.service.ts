@@ -1,0 +1,101 @@
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { dbSchemas } from '../../database/schemas';
+import { DATABASE_CONNECTION } from '../../database/database-connection';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { eq } from 'drizzle-orm';
+import { ERROR_MESSAGES } from '../../common/constants';
+import { CreateLessonDto } from './dto/create-lesson.dto';
+import { UpdateLessonDto } from './dto/update-lesson.dto';
+
+@Injectable()
+export class LessonsService {
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof dbSchemas>,
+  ) {}
+
+  async find(courseId: number) {
+    return this.db.query.lessons.findMany({
+      where: eq(dbSchemas.lessons.courseId, courseId),
+    });
+  }
+
+  async findOne(lessonId: number) {
+    const [lesson] = await this.db
+      .select()
+      .from(dbSchemas.lessons)
+      .where(eq(dbSchemas.lessons.id, lessonId));
+
+    if (!lesson) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
+    }
+
+    return lesson;
+  }
+
+  async create(createLessonDto: CreateLessonDto) {
+    const [course] = await this.db
+      .select()
+      .from(dbSchemas.courses)
+      .where(eq(dbSchemas.courses.id, createLessonDto.courseId));
+
+    if (!course) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
+    }
+
+    const [lesson] = await this.db
+      .insert(dbSchemas.lessons)
+      .values(createLessonDto)
+      .returning();
+
+    return lesson;
+  }
+
+  async update(lessonId: number, updateLessonDto: UpdateLessonDto) {
+    const [lesson] = await this.db
+      .select()
+      .from(dbSchemas.lessons)
+      .where(eq(dbSchemas.lessons.id, lessonId));
+
+    if (!lesson) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
+    }
+
+    if (updateLessonDto?.courseId) {
+      const [course] = await this.db
+        .select()
+        .from(dbSchemas.courses)
+        .where(eq(dbSchemas.courses.id, updateLessonDto.courseId));
+
+      if (!course) {
+        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
+      }
+    }
+
+    const [updatedLesson] = await this.db
+      .update(dbSchemas.lessons)
+      .set(updateLessonDto)
+      .where(eq(dbSchemas.lessons.id, lessonId))
+      .returning();
+
+    return updatedLesson;
+  }
+
+  async remove(lessonId: number) {
+    const [lesson] = await this.db
+      .select()
+      .from(dbSchemas.lessons)
+      .where(eq(dbSchemas.lessons.id, lessonId));
+
+    if (!lesson) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
+    }
+
+    const [removedLesson] = await this.db
+      .delete(dbSchemas.lessons)
+      .where(eq(dbSchemas.lessons.id, lessonId))
+      .returning();
+
+    return removedLesson;
+  }
+}
