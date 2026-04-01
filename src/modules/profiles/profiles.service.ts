@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm';
 import { ERROR_MESSAGES } from '../../common/constants';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { dbSchemas } from '../../database/schemas';
+import { DatabaseError } from 'pg';
 
 @Injectable()
 export class ProfilesService {
@@ -19,32 +20,32 @@ export class ProfilesService {
   ) {}
 
   async create(userId: number, createProfileDto: CreateProfileDto) {
-    const [user] = await this.db
-      .select()
-      .from(dbSchemas.users)
-      .where(eq(dbSchemas.users.id, userId));
+    try {
+      const [profile] = await this.db
+        .insert(dbSchemas.profiles)
+        .values({ ...createProfileDto, userId })
+        .returning();
 
-    if (!user) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('User'));
+      return profile;
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'cause' in err) {
+        const cause = (err as { cause?: unknown }).cause;
+
+        if (cause instanceof DatabaseError) {
+          if (cause.code === '23505') {
+            throw new UnprocessableEntityException(
+              ERROR_MESSAGES.ALREADY_EXISTS('Profile'),
+            );
+          }
+
+          if (cause.code === '23503') {
+            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('User'));
+          }
+        }
+      }
+
+      throw err;
     }
-
-    const [alreadyExists] = await this.db
-      .select()
-      .from(dbSchemas.profiles)
-      .where(eq(dbSchemas.profiles.userId, userId));
-
-    if (alreadyExists) {
-      throw new UnprocessableEntityException(
-        ERROR_MESSAGES.ALREADY_EXISTS('Profile'),
-      );
-    }
-
-    const profile = await this.db
-      .insert(dbSchemas.profiles)
-      .values({ ...createProfileDto, userId })
-      .returning();
-
-    return profile;
   }
 
   async findOne(userId: number) {

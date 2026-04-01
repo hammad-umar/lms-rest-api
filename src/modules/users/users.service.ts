@@ -16,6 +16,7 @@ import {
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
 import { dbSchemas } from '../../database/schemas';
+import { DatabaseError } from 'pg';
 
 @Injectable()
 export class UsersService {
@@ -25,25 +26,28 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const { email } = createUserDto;
+    try {
+      const [user] = await this.db
+        .insert(dbSchemas.users)
+        .values(createUserDto)
+        .returning();
 
-    const [alreadyExists] = await this.db
-      .select()
-      .from(dbSchemas.users)
-      .where(eq(dbSchemas.users.email, email));
+      return user;
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'cause' in err) {
+        const cause = (err as { cause?: unknown }).cause;
 
-    if (alreadyExists) {
-      throw new UnprocessableEntityException(
-        ERROR_MESSAGES.ALREADY_EXISTS('Email'),
-      );
+        if (cause instanceof DatabaseError) {
+          if (cause.code === '23505') {
+            throw new UnprocessableEntityException(
+              ERROR_MESSAGES.ALREADY_EXISTS('User'),
+            );
+          }
+        }
+      }
+
+      throw err;
     }
-
-    const [user] = await this.db
-      .insert(dbSchemas.users)
-      .values(createUserDto)
-      .returning();
-
-    return user;
   }
 
   async find(paginationDto: PaginationDto) {

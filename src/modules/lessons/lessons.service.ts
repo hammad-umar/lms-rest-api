@@ -11,6 +11,7 @@ import {
   METADATA_CONSTRUCTOR,
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
+import { DatabaseError } from 'pg';
 
 @Injectable()
 export class LessonsService {
@@ -58,68 +59,66 @@ export class LessonsService {
   }
 
   async create(createLessonDto: CreateLessonDto) {
-    const [course] = await this.db
-      .select()
-      .from(dbSchemas.courses)
-      .where(eq(dbSchemas.courses.id, createLessonDto.courseId));
+    try {
+      const [lesson] = await this.db
+        .insert(dbSchemas.lessons)
+        .values(createLessonDto)
+        .returning();
 
-    if (!course) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
+      return lesson;
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'cause' in err) {
+        const cause = (err as { cause?: unknown }).cause;
+
+        if (cause instanceof DatabaseError) {
+          if (cause.code === '23503') {
+            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
+          }
+        }
+      }
+
+      throw err;
     }
-
-    const [lesson] = await this.db
-      .insert(dbSchemas.lessons)
-      .values(createLessonDto)
-      .returning();
-
-    return lesson;
   }
 
   async update(lessonId: number, updateLessonDto: UpdateLessonDto) {
-    const [lesson] = await this.db
-      .select()
-      .from(dbSchemas.lessons)
-      .where(eq(dbSchemas.lessons.id, lessonId));
+    try {
+      const [lesson] = await this.db
+        .update(dbSchemas.lessons)
+        .set(updateLessonDto)
+        .where(eq(dbSchemas.lessons.id, lessonId))
+        .returning();
 
-    if (!lesson) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
-    }
-
-    if (updateLessonDto?.courseId) {
-      const [course] = await this.db
-        .select()
-        .from(dbSchemas.courses)
-        .where(eq(dbSchemas.courses.id, updateLessonDto.courseId));
-
-      if (!course) {
-        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
+      if (!lesson) {
+        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
       }
+
+      return lesson;
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'cause' in err) {
+        const cause = (err as { cause?: unknown }).cause;
+
+        if (cause instanceof DatabaseError) {
+          if (cause.code === '23503') {
+            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
+          }
+        }
+      }
+
+      throw err;
     }
-
-    const [updatedLesson] = await this.db
-      .update(dbSchemas.lessons)
-      .set(updateLessonDto)
-      .where(eq(dbSchemas.lessons.id, lessonId))
-      .returning();
-
-    return updatedLesson;
   }
 
   async remove(lessonId: number) {
     const [lesson] = await this.db
-      .select()
-      .from(dbSchemas.lessons)
-      .where(eq(dbSchemas.lessons.id, lessonId));
+      .delete(dbSchemas.lessons)
+      .where(eq(dbSchemas.lessons.id, lessonId))
+      .returning();
 
     if (!lesson) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
     }
 
-    const [removedLesson] = await this.db
-      .delete(dbSchemas.lessons)
-      .where(eq(dbSchemas.lessons.id, lessonId))
-      .returning();
-
-    return removedLesson;
+    return lesson;
   }
 }

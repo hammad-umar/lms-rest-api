@@ -12,6 +12,7 @@ import {
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
 import { SearchDto } from '../../common/dto/search.dto';
+import { DatabaseError } from 'pg';
 
 @Injectable()
 export class CoursesService {
@@ -21,23 +22,26 @@ export class CoursesService {
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
-    const { instructorId } = createCourseDto;
+    try {
+      const [course] = await this.db
+        .insert(dbSchemas.courses)
+        .values(createCourseDto)
+        .returning();
 
-    const [instructor] = await this.db
-      .select()
-      .from(dbSchemas.users)
-      .where(eq(dbSchemas.users.id, instructorId));
+      return course;
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'cause' in err) {
+        const cause = (err as { cause?: unknown }).cause;
 
-    if (!instructor) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Instructor'));
+        if (cause instanceof DatabaseError) {
+          if (cause.code === '23503') {
+            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Instructor'));
+          }
+        }
+      }
+
+      throw err;
     }
-
-    const [course] = await this.db
-      .insert(dbSchemas.courses)
-      .values(createCourseDto)
-      .returning();
-
-    return course;
   }
 
   async find(paginationDto: PaginationDto, searchDto: SearchDto) {
@@ -85,50 +89,43 @@ export class CoursesService {
   }
 
   async update(courseId: number, updateCourseDto: UpdateCourseDto) {
-    const [course] = await this.db
-      .select()
-      .from(dbSchemas.courses)
-      .where(eq(dbSchemas.courses.id, courseId));
+    try {
+      const [course] = await this.db
+        .update(dbSchemas.courses)
+        .set(updateCourseDto)
+        .where(eq(dbSchemas.courses.id, courseId))
+        .returning();
 
-    if (!course) {
-      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
-    }
-
-    if (updateCourseDto?.instructorId) {
-      const [instructor] = await this.db
-        .select()
-        .from(dbSchemas.users)
-        .where(eq(dbSchemas.users.id, updateCourseDto.instructorId));
-
-      if (!instructor) {
-        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Instructor'));
+      if (!course) {
+        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
       }
+
+      return course;
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'cause' in err) {
+        const cause = (err as { cause?: unknown }).cause;
+
+        if (cause instanceof DatabaseError) {
+          if (cause.code === '23503') {
+            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Instructor'));
+          }
+        }
+      }
+
+      throw err;
     }
-
-    const updatedCourse = await this.db
-      .update(dbSchemas.courses)
-      .set(updateCourseDto)
-      .where(eq(dbSchemas.courses.id, courseId))
-      .returning();
-
-    return updatedCourse;
   }
 
   async remove(courseId: number) {
     const [course] = await this.db
-      .select()
-      .from(dbSchemas.courses)
-      .where(eq(dbSchemas.courses.id, courseId));
+      .delete(dbSchemas.courses)
+      .where(eq(dbSchemas.courses.id, courseId))
+      .returning();
 
     if (!course) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
     }
 
-    const [deletedCourse] = await this.db
-      .delete(dbSchemas.courses)
-      .where(eq(dbSchemas.courses.id, courseId))
-      .returning();
-
-    return deletedCourse;
+    return course;
   }
 }
