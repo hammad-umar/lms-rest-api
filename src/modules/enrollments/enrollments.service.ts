@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { DatabaseError } from 'pg';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, count, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { dbSchemas } from '../../database/schemas';
@@ -25,31 +19,8 @@ export class EnrollmentsService {
   ) {}
 
   async enroll(createEnrollmentDto: CreateEnrollment) {
-    try {
-      await this.db.insert(dbSchemas.enrollments).values(createEnrollmentDto);
-      return { message: 'Enrolled successfully.' };
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'cause' in err) {
-        const cause = (err as { cause?: unknown }).cause;
-
-        if (cause instanceof DatabaseError) {
-          if (
-            cause.code === '23505' &&
-            cause.constraint === 'enrollments_user_id_course_id_pk'
-          ) {
-            throw new BadRequestException(
-              'User is already enrolled in this course.',
-            );
-          }
-
-          if (cause.code === '23503') {
-            throw new BadRequestException('Invalid user or course.');
-          }
-        }
-      }
-
-      throw err;
-    }
+    await this.db.insert(dbSchemas.enrollments).values(createEnrollmentDto);
+    return { message: 'Enrolled successfully.' };
   }
 
   async unEnroll(userId: number, courseId: number) {

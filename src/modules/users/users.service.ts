@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { count, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,7 +11,6 @@ import {
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
 import { dbSchemas } from '../../database/schemas';
-import { DatabaseError } from 'pg';
 
 @Injectable()
 export class UsersService {
@@ -26,28 +20,12 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    try {
-      const [user] = await this.db
-        .insert(dbSchemas.users)
-        .values(createUserDto)
-        .returning();
+    const [user] = await this.db
+      .insert(dbSchemas.users)
+      .values(createUserDto)
+      .returning();
 
-      return user;
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'cause' in err) {
-        const cause = (err as { cause?: unknown }).cause;
-
-        if (cause instanceof DatabaseError) {
-          if (cause.code === '23505') {
-            throw new UnprocessableEntityException(
-              ERROR_MESSAGES.ALREADY_EXISTS('User'),
-            );
-          }
-        }
-      }
-
-      throw err;
-    }
+    return user;
   }
 
   async find(paginationDto: PaginationDto) {

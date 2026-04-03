@@ -12,7 +12,6 @@ import {
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
 import { SearchDto } from '../../common/dto/search.dto';
-import { DatabaseError } from 'pg';
 
 @Injectable()
 export class CoursesService {
@@ -22,26 +21,12 @@ export class CoursesService {
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
-    try {
-      const [course] = await this.db
-        .insert(dbSchemas.courses)
-        .values(createCourseDto)
-        .returning();
+    const [course] = await this.db
+      .insert(dbSchemas.courses)
+      .values(createCourseDto)
+      .returning();
 
-      return course;
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'cause' in err) {
-        const cause = (err as { cause?: unknown }).cause;
-
-        if (cause instanceof DatabaseError) {
-          if (cause.code === '23503') {
-            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Instructor'));
-          }
-        }
-      }
-
-      throw err;
-    }
+    return course;
   }
 
   async find(paginationDto: PaginationDto, searchDto: SearchDto) {
@@ -89,31 +74,17 @@ export class CoursesService {
   }
 
   async update(courseId: number, updateCourseDto: UpdateCourseDto) {
-    try {
-      const [course] = await this.db
-        .update(dbSchemas.courses)
-        .set(updateCourseDto)
-        .where(eq(dbSchemas.courses.id, courseId))
-        .returning();
+    const [course] = await this.db
+      .update(dbSchemas.courses)
+      .set(updateCourseDto)
+      .where(eq(dbSchemas.courses.id, courseId))
+      .returning();
 
-      if (!course) {
-        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
-      }
-
-      return course;
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'cause' in err) {
-        const cause = (err as { cause?: unknown }).cause;
-
-        if (cause instanceof DatabaseError) {
-          if (cause.code === '23503') {
-            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Instructor'));
-          }
-        }
-      }
-
-      throw err;
+    if (!course) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
     }
+
+    return course;
   }
 
   async remove(courseId: number) {

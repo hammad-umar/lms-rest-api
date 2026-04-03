@@ -10,6 +10,7 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
+import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
 
 @Module({
   imports: [
@@ -33,6 +34,10 @@ import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: ZodSerializerInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: DatabaseExceptionFilter,
     },
     {
       provide: APP_FILTER,

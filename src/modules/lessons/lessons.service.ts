@@ -11,7 +11,6 @@ import {
   METADATA_CONSTRUCTOR,
   PAGINATION_CONSTRUCTOR,
 } from '../../common/utils/pagination';
-import { DatabaseError } from 'pg';
 
 @Injectable()
 export class LessonsService {
@@ -59,54 +58,26 @@ export class LessonsService {
   }
 
   async create(createLessonDto: CreateLessonDto) {
-    try {
-      const [lesson] = await this.db
-        .insert(dbSchemas.lessons)
-        .values(createLessonDto)
-        .returning();
+    const [lesson] = await this.db
+      .insert(dbSchemas.lessons)
+      .values(createLessonDto)
+      .returning();
 
-      return lesson;
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'cause' in err) {
-        const cause = (err as { cause?: unknown }).cause;
-
-        if (cause instanceof DatabaseError) {
-          if (cause.code === '23503') {
-            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
-          }
-        }
-      }
-
-      throw err;
-    }
+    return lesson;
   }
 
   async update(lessonId: number, updateLessonDto: UpdateLessonDto) {
-    try {
-      const [lesson] = await this.db
-        .update(dbSchemas.lessons)
-        .set(updateLessonDto)
-        .where(eq(dbSchemas.lessons.id, lessonId))
-        .returning();
+    const [lesson] = await this.db
+      .update(dbSchemas.lessons)
+      .set(updateLessonDto)
+      .where(eq(dbSchemas.lessons.id, lessonId))
+      .returning();
 
-      if (!lesson) {
-        throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
-      }
-
-      return lesson;
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'cause' in err) {
-        const cause = (err as { cause?: unknown }).cause;
-
-        if (cause instanceof DatabaseError) {
-          if (cause.code === '23503') {
-            throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Course'));
-          }
-        }
-      }
-
-      throw err;
+    if (!lesson) {
+      throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND('Lesson'));
     }
+
+    return lesson;
   }
 
   async remove(lessonId: number) {

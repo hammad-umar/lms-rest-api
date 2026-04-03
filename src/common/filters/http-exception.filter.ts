@@ -3,6 +3,7 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
+  HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -28,9 +29,9 @@ export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
         zodError.issues,
       );
 
-      response.status(500).json({
-        statusCode: 500,
-        message: 'Internal server error: response serialization failed',
+      response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Response serialization failed.',
       });
 
       return;
