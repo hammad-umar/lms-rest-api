@@ -11,6 +11,7 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { DatabaseExceptionFilter } from './common/filters/database-exception.fil
     CoursesModule,
     LessonsModule,
     EnrollmentsModule,
+    AdminModule,
   ],
   providers: [
     {
